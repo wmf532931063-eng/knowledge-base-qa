@@ -1,0 +1,16 @@
+# Render配置文件
+services:
+  - type: web
+    name: knowledge-base-qa
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm run install:all
+    startCommand: node server/index.js
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /health
+    autoDeploy: true
