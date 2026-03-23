@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI 知识库问答系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .app-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .header-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+        }
+        
+        .main-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+        
+        .status-badge {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 50px;
+            padding: 8px 20px;
+            font-weight: 600;
+        }
+        
+        .question-input {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            resize: none;
+        }
+        
+        .question-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .send-btn {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 12px 30px;
+            transition: all 0.3s;
+        }
+        
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .answer-card {
+            background: #f8f9ff;
+            border-left: 4px solid var(--primary-color);
+            border-radius: 10px;
+        }
+        
+        .loading-spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .history-item {
+            border-left: 3px solid var(--primary-color);
+            background: #f8f9ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body class="py-4">
+    <div class="container app-container">
+        <!-- 头部 -->
+        <div class="card header-card p-4 mb-4">
+            <div class="text-center">
+                <h1 class="display-5 fw-bold text-primary">🤖 AI 知识库问答系统</h1>
+                <p class="lead text-muted">基于通义千问大模型的智能问答平台</p>
+            </div>
+            
+            <!-- 状态栏 -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div>
+                    <span class="status-badge me-3">
+                        <i class="bi bi-files"></i> 文档片段: <span id="docCount">96</span>
+                    </span>
+                    <span class="status-badge">
+                        <i class="bi bi-folder"></i> 知识文件: <span id="fileCount">3</span>
+                    </span>
+                </div>
+                <button class="btn btn-outline-primary" onclick="loadStats()">
+                    <i class="bi bi-arrow-clockwise"></i> 刷新
+                </button>
+            </div>
+        </div>
+        
+        <!-- 主问答区域 -->
+        <div class="card main-card p-4 mb-4">
+            <h4 class="mb-3">💬 智能问答</h4>
+            
+            <div class="mb-3">
+                <textarea 
+                    id="questionInput" 
+                    class="form-control question-input" 
+                    placeholder="请输入您的问题... (按 Ctrl+Enter 发送)" 
+                    rows="3"
+                ></textarea>
+            </div>
+            
+            <div class="d-flex justify-content-end">
+                <button id="sendButton" class="btn send-btn text-white" onclick="askQuestion()">
+                    <i class="bi bi-send"></i> 发送提问
+                </button>
+            </div>
+            
+            <!-- 加载状态 -->
+            <div id="loadingSection" class="text-center mt-4" style="display: none;">
+                <div class="loading-spinner mx-auto mb-2"></div>
+                <p class="text-muted">AI正在思考中，请稍候...</p>
+            </div>
+            
+            <!-- 回答区域 -->
+            <div id="answerSection" class="mt-4" style="display: none;">
+                <div class="card answer-card p-4">
+                    <h5 class="mb-3">📝 AI回答</h5>
+                    <div id="answerContent" class="answer-text"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 历史记录 -->
+        <div class="card main-card p-4">
+            <h4 class="mb-3">📋 历史记录</h4>
+            <div id="historyList"></div>
+        </div>
+        
+        <!-- 系统信息 -->
+        <div class="mt-4 text-center text-white">
+            <small>后端API: <code>https://knowledge-base-qa.onrender.com</code> | 通义千问大模型 | 完全免费部署</small>
+        </div>
+    </div>
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <script>
+        const API_BASE = 'https://knowledge-base-qa.onrender.com';
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            setupKeyboardShortcuts();
+        });
+        
+        // 设置键盘快捷键
+        function setupKeyboardShortcuts() {
+            document.getElementById('questionInput').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    e.preventDefault();
+                    askQuestion();
+                }
+            });
+        }
+        
+        // 加载统计信息
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/api/knowledge/stats`);
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('docCount').textContent = data.documentCount || 0;
+                    document.getElementById('fileCount').textContent = data.files?.length || 0;
+                }
+            } catch (error) {
+                console.error('加载统计失败:', error);
+            }
+        }
+        
+        // 提问函数
+        async function askQuestion() {
+            const questionInput = document.getElementById('questionInput');
+            const sendButton = document.getElementById('sendButton');
+            const loadingSection = document.getElementById('loadingSection');
+            const answerSection = document.getElementById('answerSection');
+            const answerContent = document.getElementById('answerContent');
+            
+            const question = questionInput.value.trim();
+            if (!question) {
+                showAlert('请输入问题内容', 'warning');
+                return;
+            }
+            
+            // 禁用输入和按钮
+            questionInput.disabled = true;
+            sendButton.disabled = true;
+            sendButton.innerHTML = '<i class="bi bi-hourglass"></i> 处理中...';
+            
+            // 显示加载状态
+            loadingSection.style.display = 'block';
+            answerSection.style.display = 'none';
+            
+            try {
+                // 调用API
+                const response = await fetch(`${API_BASE}/api/qa/ask`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        question: question,
+                        topK: 5
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`API错误: ${response.status} - ${errorText}`);
+                }
+                
+                const data = await response.json();
+                
+                // 显示回答
+                answerContent.innerHTML = formatAnswer(data.answer || '抱歉，未能生成回答。');
+                answerSection.style.display = 'block';
+                
+                // 清空输入框
+                questionInput.value = '';
+                
+                // 添加到历史记录
+                addToHistory(question, data.answer || '无回答内容');
+                
+                showAlert('提问成功！AI已生成回答', 'success');
+                
+            } catch (error) {
+                console.error('提问失败:', error);
+                answerContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <strong>错误:</strong> 处理您的问题时发生错误。
+                        <br><small>${error.message}</small>
+                        <br>请检查网络连接或稍后重试。
+                    </div>
+                `;
+                answerSection.style.display = 'block';
+                showAlert('提问失败，请稍后重试', 'danger');
+            } finally {
+                // 恢复输入和按钮
+                questionInput.disabled = false;
+                sendButton.disabled = false;
+                sendButton.innerHTML = '<i class="bi bi-send"></i> 发送提问';
+                loadingSection.style.display = 'none';
+            }
+        }
+        
+        // 格式化回答
+        function formatAnswer(answer) {
+            // 简单的格式处理
+            return answer
+                .replace(/\n/g, '<br>')
+                .replace(/【(.*?)】/g, '<strong>【$1】</strong>');
+        }
+        
+        // 添加到历史记录
+        function addToHistory(question, answer) {
+            const historyList = document.getElementById('historyList');
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            
+            historyItem.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <strong>问:</strong> ${question.substring(0, 80)}${question.length > 80 ? '...' : ''}
+                        <br>
+                        <strong>答:</strong> ${answer.substring(0, 100)}${answer.length > 100 ? '...' : ''}
+                    </div>
+                    <small class="text-muted">${timeStr}</small>
+                </div>
+            `;
+            
+            // 添加到顶部
+            historyList.insertBefore(historyItem, historyList.firstChild);
+            
+            // 限制历史记录数量
+            const maxItems = 10;
+            const items = historyList.querySelectorAll('.history-item');
+            if (items.length > maxItems) {
+                items[items.length - 1].remove();
+            }
+        }
+        
+        // 显示提示
+        function showAlert(message, type) {
+            // 创建提示元素
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+            alertDiv.style.zIndex = '1050';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            // 3秒后自动消失
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 3000);
+        }
+    </script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
