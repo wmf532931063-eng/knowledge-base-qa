@@ -1,0 +1,4 @@
+# Cloudflare Pages redirects
+# Ensure all requests go to index.html for React routing
+
+/* 200

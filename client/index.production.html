@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI 知识库问答系统</title>
+    <!-- 核心基础样式 -->
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764baixd2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      
+      #root {
+        width: 100%;
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      
+      /* 加载动画 */
+      .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        text-align: center;
+      }
+      
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 1s ease-in-out infinite;
+        margin-bottom: 15px;
+      }
+      
+      .loading-text {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        margin-bottom: 5px;
+      }
+      
+      .loading-subtext {
+        font-size: 0.9rem;
+        opacity: 0.7;
+      }
+      
+      .error-container {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        text-align: center;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      
+      .error-title {
+        color: #e74c3c;
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+      }
+      
+      .error-message {
+        color: #444;
+        line-height: 1.6;
+        margin-bottom: 20px;
+      }
+      
+      .error-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 20px;
+      }
+      
+      .error-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      
+      .error-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">正在加载AI知识库问答系统...</div>
+        <div class="loading-subtext">请稍候，系统正在初始化</div>
+      </div>
+    </div>
+    
+    <!-- 如果JavaScript加载失败，显示错误信息 -->
+    <script>
+      // 如果5秒后JavaScript还没有加载，显示错误信息
+      setTimeout(function() {
+        if (!window.ReactLoaded) {
+          document.getElementById('root').innerHTML = `
+            <div class="error-container">
+              <h2 class="error-title">JavaScript加载失败</h2>
+              <p class="error-message">
+                前端应用JavaScript文件未能正确加载。这可能是因为：
+                <br>1. Cloudflare Pages构建尚未完成
+                <br>2. 浏览器缓存问题
+                <br>3. 网络连接问题
+              </p>
+              <div class="error-actions">
+                <button class="error-button" onclick="location.reload()">刷新页面</button>
+                <button class="error-button" onclick="location.href='https://knowledge-base-qa.onrender.com/health'">检查后端</button>
+              </div>
+            </div>
+          `;
+        }
+      }, 5000);
+      
+      // 标记React已加载
+      window.ReactLoaded = false;
+      
+      // 当应用加载完成后设置标志
+      document.addEventListener('DOMContentLoaded', function() {
+        window.ReactLoaded = true;
+      });
+    </script>
+    
+    <!-- 加载React应用 -->
+    <script type="module">
+      // 设置API基础URL
+      window.API_BASE = 'https://knowledge-base-qa.onrender.com';
+      
+      // 加载React应用
+      import App from './src/App.jsx';
+      import { createRoot } from 'react-dom/client';
+      import './src/index.css';
+      
+      const root = createRoot(document.getElementById('root'));
+      root.render(App);
+      
+      // 标记React已加载
+      window.ReactLoaded = true;
+    </script>
+    
+    <!-- 备用方案：如果模块加载失败 -->
+    <script>
+      window.addEventListener('error', function(e) {
+        if (e.target.tagName === 'SCRIPT' && e.target.src.includes('/src/')) {
+          console.error('模块加载失败:', e.error);
+          
+          // 显示用户友好的错误信息
+          document.getElementById('root').innerHTML = `
+            <div class="error-container">
+              <h2 class="error-title">应用加载失败</h2>
+              <p class="error-message">
+                我们无法加载完整的AI问答系统。但您仍然可以使用基本功能：
+                <br>1. 知识库统计信息
+                <br>2. 测试API连接
+              </p>
+              <div class="error-actions">
+                <button class="error-button" onclick="window.location.reload()">重试</button>
+                <button class="error-button" onclick="window.location.href='${window.API_BASE}'">查看后端API</button>
+              </div>
+            </div>
+          `;
+        }
+      });
+    </script>
+  </body>
+</html>
