@@ -4,7 +4,7 @@
   "description": "基于知识库的AI问答系统",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "start": "node server/index.js",
+    "start": "node railway-start.js",
     "server": "node server/index.js",
     "client": "cd client && npm run dev",
     "build": "cd client && npm run build",
