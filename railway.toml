@@ -1,0 +1,87 @@
+# Railway 配置文件
+# 用于部署知识库AI问答系统后端
+
+[build]
+builder = "nixpacks"
+buildCommand = "npm run install:all"
+
+[deploy]
+startCommand = "npm run server"
+healthcheckPath = "/api/qa/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+# 环境变量（在Railway控制台中设置）
+[environments.production.variables]
+NODE_ENV = "production"
+PORT = "3001"
+
+# 构建缓存
+[phases.setup]
+cacheDirectories = [
+  "node_modules",
+  "client/node_modules"
+]
+
+# 服务配置
+[service]
+name = "knowledge-base-backend"
+type = "web"
+port = 3001
+
+# 资源限制（免费版默认）
+[resources]
+memory = 512  # MB
+cpu = 0.25    # vCPU cores
+
+# 健康检查配置
+[healthchecks.liveness]
+type = "http"
+path = "/api/qa/health"
+port = 3001
+initialDelay = 30
+period = 60
+timeout = 10
+successThreshold = 1
+failureThreshold = 3
+
+[healthchecks.readiness]
+type = "http"
+path = "/api/qa/health"
+port = 3001
+initialDelay = 5
+period = 10
+timeout = 5
+successThreshold = 1
+failureThreshold = 3
+
+# 部署策略
+[deployments]
+minReplicas = 1
+maxReplicas = 1
+autoScaling = false
+
+# 网络配置
+[network]
+ports = ["3001"]
+internalDomains = ["knowledge-base-backend.internal"]
+
+# 日志配置
+[observability.logs]
+retention = "7d"
+enabled = true
+
+# 监控
+[observability.metrics]
+enabled = true
+port = 9090
+
+# 持久化存储（如果需要）
+# [volumes]
+# data = "/app/data"
+
+# 定时任务（可选）
+# [cron.backup]
+# schedule = "0 2 * * *"
+# command = "node backup.js"
