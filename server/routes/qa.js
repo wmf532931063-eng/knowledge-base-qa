@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { similaritySearch } = require('../services/vectorStore');
 const { generateAnswer } = require('../services/llmService');
+const { processBirthDateQuestion, containsBirthDate } = require('../services/lunarService');
 
 /**
  * POST /api/qa/ask
@@ -17,8 +18,21 @@ router.post('/ask', async (req, res) => {
 
     console.log(`🔍 用户问题: ${question}`);
 
+    // 0. 检查并处理出生日期问题
+    let processedQuestion = question;
+    let lunarInfo = null;
+    
+    if (containsBirthDate(question)) {
+      console.log(`📅 检测到出生日期问题，进行农历转换`);
+      const processed = processBirthDateQuestion(question);
+      processedQuestion = processed.processedQuestion;
+      lunarInfo = processed.lunarInfo;
+      
+      console.log(`🌙 处理后的提问: ${processedQuestion.substring(0, 100)}...`);
+    }
+
     // 1. 检索相关文档
-    const relevantDocs = await similaritySearch(question, topK);
+    const relevantDocs = await similaritySearch(processedQuestion, topK);
 
     if (relevantDocs.length === 0) {
       return res.json({
@@ -29,7 +43,7 @@ router.post('/ask', async (req, res) => {
 
     // 2. 生成答案
     const context = relevantDocs.map(doc => doc.content).join('\n\n');
-    const answer = await generateAnswer(question, context);
+    const answer = await generateAnswer(processedQuestion, context);
 
     // 3. 提取来源
     const sources = [...new Set(relevantDocs.map(doc => doc.metadata?.source || '未知'))];
