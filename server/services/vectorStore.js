@@ -15,10 +15,58 @@ async function initializeVectorStore() {
  * 简单分词
  */
 function tokenize(text) {
-  return text.toLowerCase()
-    .replace(/[^\w\s\u4e00-\u9fa5]/g, ' ')
-    .split(/\s+/)
-    .filter(word => word.length > 1);
+  // 1. 转换为小写
+  const lowerText = text.toLowerCase();
+  
+  // 2. 移除标点符号，保留中文字符、英文字母和数字
+  const cleanedText = lowerText.replace(/[^\u4e00-\u9fa5a-z0-9\s]/g, ' ');
+  
+  // 3. 分割成词：中文字符单独分割，英文单词保留完整
+  const tokens = [];
+  let currentWord = '';
+  
+  for (let i = 0; i < cleanedText.length; i++) {
+    const char = cleanedText[i];
+    
+    // 空格作为分隔符
+    if (/\s/.test(char)) {
+      if (currentWord.length > 0) {
+        tokens.push(currentWord);
+        currentWord = '';
+      }
+      continue;
+    }
+    
+    // 中文字符：每个单独作为一个token
+    if (/[\u4e00-\u9fa5]/.test(char)) {
+      if (currentWord.length > 0) {
+        tokens.push(currentWord);
+        currentWord = '';
+      }
+      tokens.push(char);
+    } 
+    // 英文字母或数字：积累成单词
+    else if (/[a-z0-9]/.test(char)) {
+      currentWord += char;
+    }
+  }
+  
+  // 添加最后一个词
+  if (currentWord.length > 0) {
+    tokens.push(currentWord);
+  }
+  
+  // 4. 过滤掉空词和太短的英文词（但保留中文单字）
+  return tokens.filter(token => {
+    if (token.length === 0) return false;
+    if (/[\u4e00-\u9fa5]/.test(token)) {
+      // 中文字符：单字也保留
+      return true;
+    } else {
+      // 英文/数字：至少1个字符
+      return token.length >= 1;
+    }
+  });
 }
 
 /**
