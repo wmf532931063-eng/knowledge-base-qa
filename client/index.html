@@ -3,408 +3,920 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 知识库问答系统</title>
+    <title>知识库AI助手 | 基于通义千问</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* 核心基础样式 */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        /* 1. 基础重置和变量 */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f7f7f8;
+            --bg-sidebar: #f7f7f8;
+            --bg-input: #ffffff;
+            --bg-message-ai: #f7f7f8;
+            --bg-message-user: #e8f0fe;
+            --border-color: #e5e7eb;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666;
+            --text-tertiary: #999;
+            --accent-primary: #10a37f;
+            --accent-secondary: #1a73e8;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --radius-sm: 6px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --sidebar-width: 260px;
+            --header-height: 60px;
+            --input-height: 56px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            min-height: 100vh;
-            padding: 20px;
-            color: #333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            overflow-x: hidden;
         }
-        
-        /* 主容器 */
+
+        /* 2. 主布局结构 */
         .app-container {
-            max-width: 900px;
-            margin: 0 auto;
+            display: flex;
+            height: 100vh;
+            max-height: 100vh;
         }
-        
-        /* 头部 */
+
+        /* 3. 侧边栏（桌面端显示，移动端隐藏） */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+            z-index: 100;
+        }
+
+        /* 4. 主内容区域 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 5. 头部 */
         .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
-        }
-        
-        .header h1 {
-            font-size: 2.8rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-        
-        .header p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            max-width: 600px;
-            margin: 0 auto;
-            line-height: 1.6;
-        }
-        
-        /* 状态面板 */
-        .status-panel {
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 30px;
-            color: white;
+            height: var(--header-height);
+            padding: 0 20px;
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-primary);
+            flex-shrink: 0;
         }
-        
-        .status-item {
-            font-size: 1.1rem;
-        }
-        
-        .count {
-            font-weight: bold;
-            background: rgba(255,255,255,0.25);
-            padding: 4px 12px;
-            border-radius: 20px;
-            margin-left: 8px;
-        }
-        
-        /* 主卡片 */
-        .main-card {
-            background: white;
-            border-radius: 16px;
-            padding: 35px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
-            margin-bottom: 30px;
-        }
-        
-        .main-card h2 {
-            color: #444;
-            margin-bottom: 25px;
-            font-size: 1.8rem;
+
+        .logo {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
-        
-        .main-card h2 i {
-            color: #667eea;
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #10a37f, #1a73e8);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
         }
-        
-        /* 输入区域 */
-        .question-input {
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: var(--text-primary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: var(--radius-sm);
+        }
+
+        .mobile-menu-btn:hover {
+            background-color: var(--bg-secondary);
+        }
+
+        /* 6. 聊天区域 */
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* 7. 消息组件 */
+        .message {
+            display: flex;
+            gap: 16px;
+            max-width: 800px;
+            margin: 0 auto;
             width: 100%;
-            padding: 18px;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            font-family: inherit;
-            resize: vertical;
-            min-height: 70px;
-            margin-bottom: 20px;
-            transition: all 0.3s;
         }
-        
-        .question-input:focus {
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .message-avatar.user {
+            background-color: var(--accent-secondary);
+            color: white;
+        }
+
+        .message-avatar.ai {
+            background-color: var(--accent-primary);
+            color: white;
+        }
+
+        .message-content {
+            flex: 1;
+            padding-top: 4px;
+        }
+
+        .message-text {
+            background-color: var(--bg-message-ai);
+            padding: 16px;
+            border-radius: var(--radius-md);
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-text {
+            background-color: var(--bg-message-user);
+        }
+
+        .message-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            color: var(--text-tertiary);
+            font-size: 12px;
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        /* 8. 输入区域 */
+        .input-container {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--bg-primary);
+            flex-shrink: 0;
+        }
+
+        .input-wrapper {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .input-textarea {
+            width: 100%;
+            min-height: var(--input-height);
+            max-height: 200px;
+            padding: 16px 52px 16px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            background-color: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 16px;
+            line-height: 1.5;
+            resize: none;
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        
-        .question-input::placeholder {
-            color: #94a3b8;
+
+        .input-textarea:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
         }
-        
-        /* 按钮 */
-        .send-button {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+
+        .input-textarea::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .input-send-btn {
+            position: absolute;
+            right: 12px;
+            bottom: 12px;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background-color: var(--accent-primary);
             color: white;
             border: none;
-            padding: 14px 35px;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            gap: 10px;
-            box-shadow: 0 5px 20px rgba(102,126,234,0.3);
+            justify-content: center;
+            transition: background-color 0.2s;
         }
-        
-        .send-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(102,126,234,0.4);
+
+        .input-send-btn:hover {
+            background-color: #0d906e;
         }
-        
-        .send-button:disabled {
-            background: #cbd5e1;
+
+        .input-send-btn:disabled {
+            background-color: var(--text-tertiary);
             cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
         }
-        
-        /* 回答区域 */
-        .answer-card {
-            background: #f8f9ff;
-            border-left: 5px solid #667eea;
-            border-radius: 12px;
-            padding: 25px;
-            margin-top: 25px;
-            display: none;
+
+        /* 9. 侧边栏内容 */
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
         }
-        
-        .answer-title {
-            color: #334155;
-            margin-bottom: 15px;
-            font-size: 1.3rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .answer-content {
-            color: #475569;
-            line-height: 1.7;
-            font-size: 1.05rem;
-        }
-        
-        .answer-content pre {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            overflow-x: auto;
-            margin: 10px 0;
-            border: 1px solid #e2e8f0;
-        }
-        
-        /* 加载动画 */
-        .loading-section {
-            text-align: center;
-            margin-top: 25px;
-            display: none;
-        }
-        
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(102,126,234,0.2);
-            border-radius: 50%;
-            border-top-color: #667eea;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .loading-text {
-            color: #64748b;
-            font-size: 1.1rem;
-        }
-        
-        /* 历史记录 */
-        .history-section {
-            background: white;
-            border-radius: 16px;
-            padding: 35px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
-            margin-top: 30px;
-        }
-        
-        .history-item {
-            background: #f8fafc;
-            border-left: 4px solid #94a3b8;
-            border-radius: 10px;
-            padding: 18px;
-            margin-bottom: 12px;
-            transition: all 0.3s;
-        }
-        
-        .history-item:hover {
-            background: #f1f5f9;
-            border-left-color: #667eea;
-        }
-        
-        .history-question {
-            color: #334155;
+
+        .sidebar-title {
+            font-size: 16px;
             font-weight: 600;
-            margin-bottom: 8px;
+            color: var(--text-primary);
         }
-        
-        .history-answer {
-            color: #64748b;
-            font-size: 0.95rem;
-            line-height: 1.5;
+
+        .sidebar-subtitle {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-top: 4px;
         }
-        
-        /* 工具类 */
-        .flex {
+
+        .sidebar-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-buttons {
             display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
-        
-        .justify-between {
-            justify-content: space-between;
-        }
-        
-        .items-center {
+
+        .sidebar-btn {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
             align-items: center;
+            gap: 12px;
         }
-        
-        .gap-4 {
-            gap: 16px;
+
+        .sidebar-btn:hover {
+            background-color: var(--bg-secondary);
+            border-color: var(--accent-primary);
         }
-        
+
+        .sidebar-btn i {
+            width: 20px;
+            color: var(--text-tertiary);
+        }
+
+        .sidebar-stats {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .stat-value {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        /* 10. 底部状态栏（仅开发者可见） */
+        .dev-status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 8px 20px;
+            font-size: 12px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            border-top: 1px solid #333;
+        }
+
+        .dev-status-info {
+            display: flex;
+            gap: 24px;
+        }
+
+        .dev-status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dev-status-label {
+            color: #aaa;
+        }
+
+        .dev-status-value {
+            color: #fff;
+        }
+
+        .dev-status-value.success {
+            color: #4ade80;
+        }
+
+        .dev-status-value.warning {
+            color: #fbbf24;
+        }
+
+        .dev-status-value.error {
+            color: #ef4444;
+        }
+
+        .dev-status-toggle {
+            background: none;
+            border: 1px solid #555;
+            color: #aaa;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .dev-status-toggle:hover {
+            background-color: #333;
+            color: #fff;
+        }
+
+        /* 11. 加载状态 */
+        .loading-indicator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background-color: var(--bg-message-ai);
+            border-radius: var(--radius-md);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-primary);
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .loading-dots span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        .loading-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* 12. 空状态 */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .empty-state-description {
+            max-width: 400px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .empty-state-hint {
+            font-size: 14px;
+            color: var(--text-tertiary);
+        }
+
+        /* 13. 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .message {
+                gap: 12px;
+            }
+
+            .message-avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+
+            .chat-container {
+                padding: 16px;
+            }
+
+            .input-container {
+                padding: 16px;
+            }
+
+            .dev-status-bar {
+                font-size: 10px;
+                padding: 6px 12px;
+            }
+
+            .dev-status-info {
+                gap: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 0 12px;
+            }
+
+            .logo-text {
+                font-size: 16px;
+            }
+
+            .input-textarea {
+                font-size: 14px;
+                padding: 12px 48px 12px 12px;
+            }
+
+            .dev-status-bar {
+                flex-direction: column;
+                gap: 8px;
+                align-items: flex-start;
+            }
+
+            .dev-status-toggle {
+                align-self: flex-end;
+            }
+        }
+
+        /* 14. 工具类 */
         .hidden {
-            display: none;
+            display: none !important;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .scrollbar-thin {
+            scrollbar-width: thin;
+            scrollbar-color: #c1c1c1 transparent;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: #c1c1c1;
+            border-radius: 3px;
         }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <!-- 头部 -->
-        <header class="header">
-            <h1>🤖 AI 知识库问答系统</h1>
-            <p>基于通义千问大模型的智能问答平台 | 企业级知识库管理 | 完全免费部署</p>
-        </header>
-        
-        <!-- 状态面板 -->
-        <div class="status-panel">
-            <div class="status-item">
-                知识库文档片段: <span class="count" id="docCount">96</span>
+        <!-- 侧边栏 -->
+        <aside class="sidebar scrollbar-thin" id="sidebar">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">知识库AI助手</h2>
+                <p class="sidebar-subtitle">基于通义千问 · 本地知识库</p>
             </div>
-            <div class="status-item">
-                知识文件数量: <span class="count" id="fileCount">3</span>
+            
+            <div class="sidebar-content scrollbar-thin">
+                <div class="sidebar-section">
+                    <h3 class="sidebar-section-title">快速操作</h3>
+                    <div class="sidebar-buttons">
+                        <button class="sidebar-btn" onclick="newChat()">
+                            <i class="fas fa-plus"></i>
+                            <span>新建对话</span>
+                        </button>
+                        <button class="sidebar-btn" onclick="clearHistory()">
+                            <i class="fas fa-trash"></i>
+                            <span>清空历史</span>
+                        </button>
+                        <button class="sidebar-btn" onclick="refreshStats()">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>刷新状态</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3 class="sidebar-section-title">系统状态</h3>
+                    <div class="sidebar-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">知识库文档</span>
+                            <span class="stat-value" id="statDocs">96</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">知识文件</span>
+                            <span class="stat-value" id="statFiles">3</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">API状态</span>
+                            <span class="stat-value" id="statAPI">正常</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">模型状态</span>
+                            <span class="stat-value" id="statModel">可用</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3 class="sidebar-section-title">示例问题</h3>
+                    <div class="sidebar-buttons">
+                        <button class="sidebar-btn" onclick="askExample('什么是四柱预测学？')">
+                            <i class="fas fa-question"></i>
+                            <span>什么是四柱预测学？</span>
+                        </button>
+                        <button class="sidebar-btn" onclick="askExample('天干地支有哪些？')">
+                            <i class="fas fa-star"></i>
+                            <span>天干地支有哪些？</span>
+                        </button>
+                        <button class="sidebar-btn" onclick="askExample('五行是什么？')">
+                            <i class="fas fa-fire"></i>
+                            <span>五行是什么？</span>
+                        </button>
+                        <button class="sidebar-btn" onclick="askExample('如何学习占卜？')">
+                            <i class="fas fa-book"></i>
+                            <span>如何学习占卜？</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3 class="sidebar-section-title">系统特性</h3>
+                    <div class="sidebar-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">深度思考</span>
+                            <span class="stat-value">❌ 不需要</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">联网搜索</span>
+                            <span class="stat-value">❌ 不需要</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">附件上传</span>
+                            <span class="stat-value">❌ 不需要</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">知识库检索</span>
+                            <span class="stat-value">✅ 支持</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-        
-        <!-- 主问答卡片 -->
-        <main class="main-card">
-            <h2><i>💬</i> 智能问答</h2>
-            
-            <textarea 
-                class="question-input"
-                id="questionInput"
-                placeholder="请输入您的问题... (按 Ctrl+Enter 发送)"
-                rows="4"
-            ></textarea>
-            
-            <div class="flex justify-between items-center">
-                <div>
-                    <button id="refreshButton" class="send-button" onclick="loadStats()">
-                        <span>🔄 刷新统计</span>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <!-- 头部 -->
+            <header class="header">
+                <div class="logo">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="logo-icon">KB</div>
+                    <div class="logo-text">知识库AI助手</div>
+                </div>
+                <div class="header-actions">
+                    <button class="sidebar-btn" style="padding: 8px 16px;" onclick="toggleDevStatus()">
+                        <i class="fas fa-code"></i>
+                        <span>开发者</span>
                     </button>
                 </div>
-                
-                <button id="sendButton" class="send-button" onclick="askQuestion()">
-                    <span>📤 发送提问</span>
-                </button>
+            </header>
+
+            <!-- 聊天区域 -->
+            <div class="chat-container scrollbar-thin" id="chatContainer">
+                <!-- 空状态 -->
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h2 class="empty-state-title">欢迎使用知识库AI助手</h2>
+                    <p class="empty-state-description">
+                        基于通义千问大模型，结合本地知识库，为您提供专业的占卜、命理、易学等领域的智能问答服务。
+                    </p>
+                    <p class="empty-state-hint">
+                        输入您的问题，或点击左侧的示例问题开始对话
+                    </p>
+                </div>
+
+                <!-- 消息列表会动态插入到这里 -->
+                <div id="messagesContainer"></div>
             </div>
-            
-            <!-- 回答区域 -->
-            <div class="answer-card" id="answerSection">
-                <h3 class="answer-title"><i>📝</i> AI回答</h3>
-                <div class="answer-content" id="answerContent"></div>
-            </div>
-            
-            <!-- 加载状态 -->
-            <div class="loading-section" id="loadingSection">
-                <div class="spinner"></div>
-                <p class="loading-text">AI正在思考中，请稍候...</p>
+
+            <!-- 输入区域 -->
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <textarea 
+                        class="input-textarea scrollbar-thin" 
+                        id="messageInput"
+                        placeholder="输入您的问题...（支持 Ctrl+Enter 发送）"
+                        rows="1"
+                        oninput="autoResize(this)"
+                    ></textarea>
+                    <button class="input-send-btn" id="sendButton" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
             </div>
         </main>
-        
-        <!-- 历史记录 -->
-        <section class="history-section">
-            <h2><i>📋</i> 历史记录</h2>
-            <div id="historyList">
-                <div class="history-item">
-                    <div class="history-question">问: 什么是四柱预测学？</div>
-                    <div class="history-answer">答: 四柱预测学，又名八字，是中华传统文化中一门深奥而系统的命运推演术...</div>
-                </div>
-                <div class="history-item">
-                    <div class="history-question">问: 如何注册账号？</div>
-                    <div class="history-answer">答: 天风姤，九二爻动。卦象为"天地相遇"，象征初遇、邂逅...</div>
-                </div>
-            </div>
-        </section>
-        
-        <!-- 系统信息 -->
-        <footer style="text-align: center; color: white; margin-top: 40px; padding: 20px;">
-            <p><strong>AI知识库问答系统</strong> | 后端API: https://knowledge-base-qa.onrender.com</p>
-            <p><small>通义千问大模型 | 中国大陆优化访问 | 免费云部署 | 生产环境已就绪</small></p>
-        </footer>
     </div>
-    
+
+    <!-- 开发者状态栏 -->
+    <div class="dev-status-bar hidden" id="devStatusBar">
+        <div class="dev-status-info">
+            <div class="dev-status-item">
+                <span class="dev-status-label">后端API：</span>
+                <span class="dev-status-value success" id="devAPIStatus">https://knowledge-base-qa.onrender.com</span>
+            </div>
+            <div class="dev-status-item">
+                <span class="dev-status-label">知识库：</span>
+                <span class="dev-status-value success" id="devKnowledgeStatus">96文档已索引</span>
+            </div>
+            <div class="dev-status-item">
+                <span class="dev-status-label">错误信息：</span>
+                <span class="dev-status-value" id="devErrorStatus">无</span>
+            </div>
+            <div class="dev-status-item">
+                <span class="dev-status-label">最后更新：</span>
+                <span class="dev-status-value" id="devLastUpdate">-</span>
+            </div>
+        </div>
+        <button class="dev-status-toggle" onclick="toggleDevStatus()">
+            隐藏
+        </button>
+    </div>
+
     <script>
-        // 配置
-        const API_BASE = 'https://knowledge-base-qa.onrender.com';
-        
-        // 页面加载完成后初始化
+        // ========== 配置 ==========
+        const CONFIG = {
+            API_BASE: 'https://knowledge-base-qa.onrender.com',
+            APP_NAME: '知识库AI助手',
+            VERSION: '1.0.0'
+        };
+
+        // ========== 状态管理 ==========
+        const state = {
+            messages: [],
+            isSending: false,
+            devStatusVisible: false,
+            sidebarOpen: false,
+            apiStatus: 'unknown',
+            knowledgeStats: null,
+            lastError: null
+        };
+
+        // ========== DOM元素 ==========
+        const elements = {
+            sidebar: null,
+            chatContainer: null,
+            messagesContainer: null,
+            messageInput: null,
+            sendButton: null,
+            emptyState: null,
+            devStatusBar: null,
+            devAPIStatus: null,
+            devKnowledgeStatus: null,
+            devErrorStatus: null,
+            devLastUpdate: null,
+            statDocs: null,
+            statFiles: null,
+            statAPI: null,
+            statModel: null
+        };
+
+        // ========== 初始化 ==========
         document.addEventListener('DOMContentLoaded', function() {
-            // 加载统计信息
-            loadStats();
-            
-            // 设置键盘快捷键
-            document.getElementById('questionInput').addEventListener('keydown', function(e) {
+            initializeElements();
+            initializeEventListeners();
+            initializeApp();
+        });
+
+        function initializeElements() {
+            elements.sidebar = document.getElementById('sidebar');
+            elements.chatContainer = document.getElementById('chatContainer');
+            elements.messagesContainer = document.getElementById('messagesContainer');
+            elements.messageInput = document.getElementById('messageInput');
+            elements.sendButton = document.getElementById('sendButton');
+            elements.emptyState = document.getElementById('emptyState');
+            elements.devStatusBar = document.getElementById('devStatusBar');
+            elements.devAPIStatus = document.getElementById('devAPIStatus');
+            elements.devKnowledgeStatus = document.getElementById('devKnowledgeStatus');
+            elements.devErrorStatus = document.getElementById('devErrorStatus');
+            elements.devLastUpdate = document.getElementById('devLastUpdate');
+            elements.statDocs = document.getElementById('statDocs');
+            elements.statFiles = document.getElementById('statFiles');
+            elements.statAPI = document.getElementById('statAPI');
+            elements.statModel = document.getElementById('statModel');
+        }
+
+        function initializeEventListeners() {
+            // 输入框事件
+            elements.messageInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' && e.ctrlKey) {
                     e.preventDefault();
-                    askQuestion();
+                    sendMessage();
                 }
             });
-            
-            // 显示历史记录示例
-            initializeHistory();
-            
-            // 显示成功提示
-            setTimeout(() => {
-                showAlert('AI问答系统已准备就绪！🎉', 'success');
-            }, 1000);
-        });
-        
-        // 加载统计信息
-        async function loadStats() {
-            try {
-                const response = await fetch(`${API_BASE}/api/knowledge/stats`);
-                if (response.ok) {
-                    const data = await response.json();
-                    document.getElementById('docCount').textContent = data.documentCount || 0;
-                    document.getElementById('fileCount').textContent = data.files?.length || 0;
+
+            // 窗口大小变化时调整侧边栏
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    elements.sidebar.classList.remove('open');
+                    state.sidebarOpen = false;
                 }
-            } catch (error) {
-                console.error('加载统计失败:', error);
-            }
+            });
+
+            // 点击外部关闭移动端侧边栏
+            document.addEventListener('click', function(e) {
+                if (state.sidebarOpen && window.innerWidth <= 768) {
+                    if (!elements.sidebar.contains(e.target) && 
+                        !e.target.closest('.mobile-menu-btn')) {
+                        toggleSidebar();
+                    }
+                }
+            });
         }
-        
-        // 提问函数
-        async function askQuestion() {
-            const questionInput = document.getElementById('questionInput');
-            const sendButton = document.getElementById('sendButton');
-            const loadingSection = document.getElementById('loadingSection');
-            const answerSection = document.getElementById('answerSection');
-            const answerContent = document.getElementById('answerContent');
+
+        async function initializeApp() {
+            // 加载历史消息
+            loadMessages();
             
-            const question = questionInput.value.trim();
-            if (!question) {
-                showAlert('请输入问题内容', 'warning');
-                return;
-            }
+            // 检查API状态
+            await checkAPIStatus();
             
-            // 禁用输入和按钮
-            questionInput.disabled = true;
-            sendButton.disabled = true;
-            sendButton.innerHTML = '<span>⏳ 处理中...</span>';
+            // 加载知识库统计
+            await loadKnowledgeStats();
+            
+            // 更新开发者状态
+            updateDevStatus();
+            
+            // 显示欢迎消息
+            showWelcomeMessage();
+        }
+
+        // ========== 核心功能 ==========
+        function sendMessage() {
+            const message = elements.messageInput.value.trim();
+            if (!message || state.isSending) return;
+
+            // 添加用户消息
+            addMessage('user', message);
+            elements.messageInput.value = '';
+            autoResize(elements.messageInput);
             
             // 显示加载状态
-            loadingSection.style.display = 'block';
-            answerSection.style.display = 'none';
+            showLoading();
+            
+            // 发送到API
+            sendToAPI(message);
+        }
+
+        async function sendToAPI(question) {
+            state.isSending = true;
+            elements.sendButton.disabled = true;
             
             try {
-                // 调用API
-                const response = await fetch(`${API_BASE}/api/qa/ask`, {
+                const response = await fetch(`${CONFIG.API_BASE}/api/qa/ask`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -414,160 +926,343 @@
                         topK: 5
                     })
                 });
-                
+
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`API错误: ${response.status} - ${errorText}`);
+                    throw new Error(`API错误: ${response.status}`);
                 }
-                
+
                 const data = await response.json();
                 
-                // 显示回答
-                answerContent.innerHTML = formatAnswer(data.answer || '抱歉，未能生成回答。');
-                answerSection.style.display = 'block';
+                // 移除加载状态
+                hideLoading();
                 
-                // 清空输入框
-                questionInput.value = '';
+                // 添加AI回复
+                addMessage('ai', data.answer || '抱歉，未能生成回答。');
                 
-                // 添加到历史记录
-                addToHistory(question, data.answer || '无回答内容');
-                
-                showAlert('提问成功！AI已生成回答', 'success');
+                // 更新状态
+                state.lastError = null;
                 
             } catch (error) {
-                console.error('提问失败:', error);
-                answerContent.innerHTML = `
-                    <div style="background: #fee; border-left: 4px solid #f44336; padding: 15px; border-radius: 8px;">
-                        <strong>错误:</strong> 处理您的问题时发生错误。
-                        <br><small>${error.message}</small>
-                        <br>请检查网络连接或稍后重试。
-                    </div>
-                `;
-                answerSection.style.display = 'block';
-                showAlert('提问失败，请稍后重试', 'danger');
+                console.error('发送消息失败:', error);
+                
+                // 移除加载状态
+                hideLoading();
+                
+                // 显示错误消息
+                addMessage('ai', `抱歉，处理您的问题时出现了错误：${error.message}\n请稍后重试或检查网络连接。`);
+                
+                // 记录错误
+                state.lastError = error.message;
             } finally {
-                // 恢复输入和按钮
-                questionInput.disabled = false;
-                sendButton.disabled = false;
-                sendButton.innerHTML = '<span>📤 发送提问</span>';
-                loadingSection.style.display = 'none';
+                state.isSending = false;
+                elements.sendButton.disabled = false;
+                updateDevStatus();
+                saveMessages();
             }
         }
-        
-        // 格式化回答
-        function formatAnswer(answer) {
-            // 基本的Markdown风格格式化
-            return answer
-                .replace(/\n/g, '<br>')
-                .replace(/【(.*?)】/g, '<strong style="color: #667eea;">【$1】</strong>')
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/^- (.*?)(\n|$)/gm, '• $1<br>')
-                .replace(/```(.*?)```/gs, '<pre style="background: white; padding: 15px; border-radius: 8px; overflow-x: auto; margin: 10px 0; border: 1px solid #e2e8f0;"><code>$1</code></pre>');
-        }
-        
-        // 添加到历史记录
-        function addToHistory(question, answer) {
-            const historyList = document.getElementById('historyList');
-            const historyItem = document.createElement('div');
-            historyItem.className = 'history-item';
-            
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString('zh-CN', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            
-            historyItem.innerHTML = `
-                <div class="history-question">问: ${question}</div>
-                <div class="history-answer">答: ${answer.substring(0, 120)}${answer.length > 120 ? '...' : ''}</div>
-                <small style="color: #94a3b8; font-size: 0.85rem; margin-top: 5px;">${timeStr}</small>
-            `;
-            
-            // 添加到顶部
-            historyList.insertBefore(historyItem, historyList.firstChild);
-            
-            // 限制历史记录数量
-            const maxItems = 10;
-            const items = historyList.querySelectorAll('.history-item');
-            if (items.length > maxItems) {
-                items[items.length - 1].remove();
+
+        // ========== UI功能 ==========
+        function addMessage(role, content) {
+            // 隐藏空状态
+            if (state.messages.length === 0) {
+                elements.emptyState.classList.add('hidden');
             }
-        }
-        
-        // 初始化历史记录
-        function initializeHistory() {
-            const historyList = document.getElementById('historyList');
-            historyList.innerHTML = `
-                <div class="history-item">
-                    <div class="history-question">问: 什么是四柱预测学？</div>
-                    <div class="history-answer">答: 四柱预测学，又名八字，是中华传统文化中一门深奥而系统的命运推演术，以人出生的年、月、日、时为依据，分别对应天干地支。</div>
-                </div>
-                <div class="history-item">
-                    <div class="history-question">问: 如何注册账号？</div>
-                    <div class="history-answer">答: 请前往官网点击"注册"按钮，按照流程填写手机号和验证码。保持耐心与信心，顺利注册在望。</div>
-                </div>
-            `;
-        }
-        
-        // 显示提示
-        function showAlert(message, type) {
-            const alertTypes = {
-                success: { bg: '#d1fae5', color: '#065f46', border: '#10b981' },
-                warning: { bg: '#fef3c7', color: '#92400e', border: '#f59e0b' },
-                danger: { bg: '#fee2e2', color: '#991b1b', border: '#ef4444' }
+            
+            // 创建消息
+            const message = {
+                id: Date.now(),
+                role: role,
+                content: content,
+                time: new Date().toLocaleTimeString('zh-CN', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                })
             };
             
-            const alertStyle = alertTypes[type] || alertTypes.success;
+            state.messages.push(message);
             
-            // 创建提示元素
-            const alertDiv = document.createElement('div');
-            alertDiv.style.cssText = `
+            // 渲染消息
+            const messageElement = createMessageElement(message);
+            elements.messagesContainer.appendChild(messageElement);
+            
+            // 滚动到底部
+            setTimeout(() => {
+                elements.chatContainer.scrollTop = elements.chatContainer.scrollHeight;
+            }, 100);
+        }
+
+        function createMessageElement(message) {
+            const div = document.createElement('div');
+            div.className = `message ${message.role} fade-in`;
+            div.id = `message-${message.id}`;
+            
+            const avatarClass = message.role === 'user' ? 'user' : 'ai';
+            const avatarText = message.role === 'user' ? '你' : 'AI';
+            
+            div.innerHTML = `
+                <div class="message-avatar ${avatarClass}">${avatarText}</div>
+                <div class="message-content">
+                    <div class="message-text">${formatMessageContent(message.content)}</div>
+                    <div class="message-meta">
+                        <span class="message-time">${message.time}</span>
+                    </div>
+                </div>
+            `;
+            
+            return div;
+        }
+
+        function formatMessageContent(content) {
+            // 基本的格式化
+            return content
+                .replace(/\n/g, '<br>')
+                .replace(/【(.*?)】/g, '<strong style="color: #10a37f;">【$1】</strong>')
+                .replace(/（(.*?)）/g, '<span style="color: #666;">（$1）</span>')
+                .replace(/`([^`]+)`/g, '<code style="background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 4px; font-family: monospace;">$1</code>');
+        }
+
+        function showLoading() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'loading-indicator fade-in';
+            loadingDiv.id = 'loadingIndicator';
+            loadingDiv.innerHTML = `
+                <div class="loading-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <div class="loading-text">AI正在思考中...</div>
+            `;
+            elements.messagesContainer.appendChild(loadingDiv);
+            elements.chatContainer.scrollTop = elements.chatContainer.scrollHeight;
+        }
+
+        function hideLoading() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            if (loadingIndicator) {
+                loadingIndicator.remove();
+            }
+        }
+
+        function showWelcomeMessage() {
+            if (state.messages.length === 0) {
+                setTimeout(() => {
+                    addMessage('ai', `您好！我是${CONFIG.APP_NAME}，基于通义千问大模型和本地知识库为您服务。\n\n我可以帮您解答关于占卜、命理、易学等方面的问题。请随意提问！`);
+                }, 1000);
+            }
+        }
+
+        // ========== 侧边栏功能 ==========
+        function toggleSidebar() {
+            if (window.innerWidth <= 768) {
+                elements.sidebar.classList.toggle('open');
+                state.sidebarOpen = !state.sidebarOpen;
+            }
+        }
+
+        function newChat() {
+            if (confirm('确定要开始新的对话吗？当前对话历史将被清空。')) {
+                state.messages = [];
+                elements.messagesContainer.innerHTML = '';
+                elements.emptyState.classList.remove('hidden');
+                localStorage.removeItem('kb_chat_messages');
+                addMessage('ai', '新对话已开始！请问有什么可以帮助您的？');
+            }
+        }
+
+        function clearHistory() {
+            if (confirm('确定要清空所有历史消息吗？此操作不可撤销。')) {
+                state.messages = [];
+                elements.messagesContainer.innerHTML = '';
+                elements.emptyState.classList.remove('hidden');
+                localStorage.removeItem('kb_chat_messages');
+                addMessage('ai', '历史消息已清空！');
+            }
+        }
+
+        function askExample(question) {
+            elements.messageInput.value = question;
+            autoResize(elements.messageInput);
+            if (window.innerWidth <= 768) {
+                toggleSidebar();
+            }
+        }
+
+        // ========== 状态管理功能 ==========
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch(`${CONFIG.API_BASE}/health`);
+                if (response.ok) {
+                    state.apiStatus = 'healthy';
+                    elements.statAPI.textContent = '正常';
+                    elements.statAPI.style.color = '#10a37f';
+                } else {
+                    state.apiStatus = 'unhealthy';
+                    elements.statAPI.textContent = '异常';
+                    elements.statAPI.style.color = '#ef4444';
+                }
+            } catch (error) {
+                state.apiStatus = 'error';
+                elements.statAPI.textContent = '错误';
+                elements.statAPI.style.color = '#ef4444';
+                state.lastError = `API连接失败: ${error.message}`;
+            }
+        }
+
+        async function loadKnowledgeStats() {
+            try {
+                const response = await fetch(`${CONFIG.API_BASE}/api/knowledge/stats`);
+                if (response.ok) {
+                    const data = await response.json();
+                    state.knowledgeStats = data;
+                    
+                    elements.statDocs.textContent = data.documentCount || 0;
+                    elements.statFiles.textContent = data.files?.length || 0;
+                    
+                    elements.statModel.textContent = data.documentCount > 0 ? '可用' : '无数据';
+                    elements.statModel.style.color = data.documentCount > 0 ? '#10a37f' : '#f59e0b';
+                }
+            } catch (error) {
+                console.error('加载知识库统计失败:', error);
+                state.lastError = `知识库加载失败: ${error.message}`;
+            }
+        }
+
+        function refreshStats() {
+            checkAPIStatus();
+            loadKnowledgeStats();
+            updateDevStatus();
+            
+            // 显示提示
+            showToast('状态已刷新', 'success');
+        }
+
+        // ========== 开发者状态功能 ==========
+        function toggleDevStatus() {
+            state.devStatusVisible = !state.devStatusVisible;
+            if (state.devStatusVisible) {
+                elements.devStatusBar.classList.remove('hidden');
+                updateDevStatus();
+            } else {
+                elements.devStatusBar.classList.add('hidden');
+            }
+        }
+
+        function updateDevStatus() {
+            if (!state.devStatusVisible) return;
+            
+            // API状态
+            elements.devAPIStatus.textContent = CONFIG.API_BASE;
+            elements.devAPIStatus.className = 'dev-status-value ' + (
+                state.apiStatus === 'healthy' ? 'success' : 
+                state.apiStatus === 'unhealthy' ? 'warning' : 'error'
+            );
+            
+            // 知识库状态
+            if (state.knowledgeStats) {
+                const docCount = state.knowledgeStats.documentCount || 0;
+                const fileCount = state.knowledgeStats.files?.length || 0;
+                elements.devKnowledgeStatus.textContent = `${docCount}文档/${fileCount}文件`;
+                elements.devKnowledgeStatus.className = 'dev-status-value ' + (
+                    docCount > 0 ? 'success' : 'warning'
+                );
+            } else {
+                elements.devKnowledgeStatus.textContent = '加载中...';
+                elements.devKnowledgeStatus.className = 'dev-status-value warning';
+            }
+            
+            // 错误信息
+            if (state.lastError) {
+                elements.devErrorStatus.textContent = state.lastError.substring(0, 50) + '...';
+                elements.devErrorStatus.className = 'dev-status-value error';
+            } else {
+                elements.devErrorStatus.textContent = '无';
+                elements.devErrorStatus.className = 'dev-status-value success';
+            }
+            
+            // 最后更新时间
+            elements.devLastUpdate.textContent = new Date().toLocaleTimeString('zh-CN');
+        }
+
+        // ========== 数据持久化 ==========
+        function saveMessages() {
+            try {
+                const messagesToSave = state.messages.slice(-50); // 只保存最近50条
+                localStorage.setItem('kb_chat_messages', JSON.stringify(messagesToSave));
+            } catch (error) {
+                console.error('保存消息失败:', error);
+            }
+        }
+
+        function loadMessages() {
+            try {
+                const savedMessages = localStorage.getItem('kb_chat_messages');
+                if (savedMessages) {
+                    const messages = JSON.parse(savedMessages);
+                    messages.forEach(msg => {
+                        state.messages.push(msg);
+                        const element = createMessageElement(msg);
+                        elements.messagesContainer.appendChild(element);
+                    });
+                    
+                    if (messages.length > 0) {
+                        elements.emptyState.classList.add('hidden');
+                        setTimeout(() => {
+                            elements.chatContainer.scrollTop = elements.chatContainer.scrollHeight;
+                        }, 100);
+                    }
+                }
+            } catch (error) {
+                console.error('加载消息失败:', error);
+            }
+        }
+
+        // ========== 工具函数 ==========
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            const newHeight = Math.min(textarea.scrollHeight, 200);
+            textarea.style.height = newHeight + 'px';
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            
+            // 样式
+            toast.style.cssText = `
                 position: fixed;
                 top: 20px;
                 right: 20px;
-                background: ${alertStyle.bg};
-                color: ${alertStyle.color};
-                border-left: 5px solid ${alertStyle.border};
-                padding: 15px 25px;
+                background: ${type === 'success' ? '#10a37f' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                color: white;
+                padding: 12px 24px;
                 border-radius: 8px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                 z-index: 9999;
-                max-width: 400px;
-                font-weight: 500;
-                animation: slideIn 0.3s ease-out;
+                animation: slideInRight 0.3s ease;
             `;
             
-            alertDiv.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 1.3rem;">${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : '❌'}</span>
-                    <span>${message}</span>
-                </div>
-            `;
+            document.body.appendChild(toast);
             
-            document.body.appendChild(alertDiv);
-            
-            // 3秒后自动消失
             setTimeout(() => {
-                if (alertDiv.parentNode) {
-                    alertDiv.style.animation = 'slideOut 0.3s ease-out';
-                    setTimeout(() => {
-                        if (alertDiv.parentNode) {
-                            alertDiv.parentNode.removeChild(alertDiv);
-                        }
-                    }, 300);
-                }
+                toast.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
             }, 3000);
         }
-        
+
         // 添加CSS动画
         const style = document.createElement('style');
         style.textContent = `
-            @keyframes slideIn {
+            @keyframes slideInRight {
                 from { transform: translateX(100%); opacity: 0; }
                 to { transform: translateX(0); opacity: 1; }
             }
-            @keyframes slideOut {
+            @keyframes slideOutRight {
                 from { transform: translateX(0); opacity: 1; }
                 to { transform: translateX(100%); opacity: 0; }
             }
