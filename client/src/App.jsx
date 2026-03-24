@@ -81,7 +81,7 @@ function App() {
   return (
     <div className="container">
       <header className="header">
-        <h1>AI 知识库问答</h1>
+        <h1>命运主理人</h1>
         <p>基于本地知识库的智能问答系统</p>
       </header>
 

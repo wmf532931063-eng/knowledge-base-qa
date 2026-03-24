@@ -87,7 +87,7 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
       <div className="mb-4">
         <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
           <Bot className="w-4 h-4" />
-          <span>AI助手</span>
+          <span>命运主理人</span>
         </div>
       </div>
 
@@ -96,7 +96,7 @@ export default function ChatInterface({ apiKey }: ChatInterfaceProps) {
           <div className="flex items-center justify-center h-full text-gray-500">
             <div className="text-center">
               <Bot className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-              <p>你好！我是基于知识库的AI助手</p>
+              <p>你好！我是命运主理人，基于知识库的智能助手</p>
               <p className="text-sm mt-1">请先上传文档，然后向我提问</p>
             </div>
           </div>
