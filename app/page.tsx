@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import FortuneHeader from '@/components/FortuneHeader'
-import FortuneChat from '@/components/FortuneChat'
+import FortuneChatWithDialog from '@/components/FortuneChatWithDialog'
 import LLMSettings from '@/components/LLMSettings'
 import LocalKnowledgeUpload from '@/components/LocalKnowledgeUpload'
 import { BackendConfig, loadBackendConfig, isConfigComplete } from '@/lib/config'
@@ -111,7 +111,7 @@ export default function Home() {
                 </button>
               </div>
             ) : (
-              <FortuneChat backendConfig={backendConfig!} documents={documents} />
+              <FortuneChatWithDialog backendConfig={backendConfig!} documents={documents} />
             )}
           </div>
         </div>
