@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { similaritySearch } = require('../services/vectorStore');
-const { generateAnswer } = require('../services/llmService');
+const enhancedLLMService = require('../services/enhancedLLMService');
 const { processBirthDateQuestion, containsBirthDate } = require('../services/lunarService');
 
 /**
@@ -41,9 +41,9 @@ router.post('/ask', async (req, res) => {
       });
     }
 
-    // 2. 生成答案
+    // 2. 生成答案（使用增强版服务）
     const context = relevantDocs.map(doc => doc.content).join('\n\n');
-    const answer = await generateAnswer(processedQuestion, context);
+    const answer = await enhancedLLMService.generateAnswer(processedQuestion, context);
 
     // 3. 提取来源
     const sources = [...new Set(relevantDocs.map(doc => doc.metadata?.source || '未知'))];
@@ -63,10 +63,78 @@ router.post('/ask', async (req, res) => {
 
 /**
  * GET /api/qa/health
- * 健康检查
+ * 增强版健康检查，包含系统状态
  */
-router.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+router.get('/health', async (req, res) => {
+  try {
+    const healthData = {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      server: {
+        nodeVersion: process.version,
+        platform: process.platform,
+        uptime: process.uptime(),
+        memoryUsage: {
+          heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB',
+          heapTotal: Math.round(process.memoryUsage().heapTotal / 4 / 1024) + 'MB'
+        }
+      },
+      environment: {
+        nodeEnv: process.env.NODE_ENV || 'development',
+        port: process.env.PORT || 3001,
+        apiKeyConfigured: !!(process.env.NEXT_PUBLIC_LLM_API_KEY && 
+                            !process.env.NEXT_PUBLIC_LLM_API_KEY.includes('your_'))
+      },
+      stats: enhancedLLMService.getStats()
+    };
+    
+    res.json(healthData);
+  } catch (error) {
+    console.error('❌ 健康检查失败:', error.message);
+    res.status(500).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      message: '健康检查失败',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/qa/llm-status
+ * 大模型连接状态检查
+ */
+router.get('/llm-status', async (req, res) => {
+  try {
+    console.log('🔍 检查大模型连接状态...');
+    
+    const testResults = await enhancedLLMService.testAllProviders();
+    
+    const overallStatus = testResults.some(result => result.status === 'connected') 
+      ? 'healthy' 
+      : testResults.some(result => result.status === 'failed') 
+        ? 'degraded' 
+        : 'unavailable';
+    
+    res.json({
+      status: overallStatus,
+      timestamp: new Date().toISOString(),
+      providers: testResults,
+      summary: {
+        totalProviders: testResults.length,
+        connectedProviders: testResults.filter(r => r.status === 'connected').length,
+        failedProviders: testResults.filter(r => r.status === 'failed').length
+      }
+    });
+  } catch (error) {
+    console.error('❌ 大模型状态检查失败:', error.message);
+    res.status(500).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      message: '大模型状态检查失败',
+      error: error.message
+    });
+  }
 });
 
 module.exports = router;

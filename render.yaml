@@ -1,16 +1,42 @@
-# Render配置文件
+# Render 部署配置文件
+# 确保线上环境正确配置
+
 services:
   - type: web
     name: knowledge-base-qa
     env: node
-    region: oregon
-    plan: free
-    buildCommand: npm run install:all
-    startCommand: node server/index.js
+    region: oregon  # 或选择其他地区
+    buildCommand: |
+      npm install
+      npm run build
+    startCommand: |
+      node server/index.js
+    healthCheckPath: /api/qa/health
+    autoDeploy: true
     envVars:
-      - key: PORT
-        value: 3001
       - key: NODE_ENV
         value: production
-    healthCheckPath: /health
-    autoDeploy: true
+      - key: PORT
+        value: 3001
+      - key: NEXT_PUBLIC_LLM_API_KEY
+        sync: false  # 重要：在Render控制台手动设置
+      - key: NEXT_PUBLIC_LLM_BASE_URL
+        value: https://dashscope.aliyuncs.com/compatible-mode/v1
+      - key: NEXT_PUBLIC_LLM_MODEL
+        value: qwen-turbo
+      - key: EMBEDDING_MODEL
+        value: Xenova/all-MiniLM-L6-v2
+    disk:
+      name: vector-store
+      mountPath: /opt/render/project/src/vector-store
+      sizeGB: 1
+    scaling:
+      minInstances: 1
+      maxInstances: 1
+
+# 构建缓存配置
+buildFilter:
+  paths:
+    - node_modules/
+    - vector-store/
+    - knowledge-base/
